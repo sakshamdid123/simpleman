@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple Moments</title>
+  <style>
+    /* Reset & Box Sizing */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+      scroll-behavior: smooth;
+    }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    overflow-x: hidden; 
+    margin: 0;
+    }
+    .timeline {
+      position: relative;
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+    }
+    .blur {
+      filter: blur(20px);
+      opacity: 0.7;
+    }
+    .memory {
+      height: 100vh;
+      width: 100%;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 2rem;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      position: relative;
+      z-index: 2;
+      flex-wrap: wrap;
+      text-align: center;
+    }
+    .memory.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .content, .image-container {
+      width: 40%;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      filter: grayscale(100%);
+      transition: filter 0.3s ease;
+    }
+    img:hover {
+      filter: grayscale(0);
+    }
+    .thread {
+      position: absolute;
+      top: 100vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 5%;
+      height: calc(100vh * 3);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .thread svg {
+      width: 100%;
+      height: 100%;
+    }
+
+/* Responsive Video Container */
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* Adjust based on video size */
+    margin: auto;
+    aspect-ratio: 9 / 16; /* Ensures proper aspect ratio */
+}
+
+/* Video Resizing */
+.video-wrapper iframe {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+  .video-player {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 90vh; /* Prevents portrait videos from taking full height */
+    object-fit: contain; /* Ensures proper aspect ratio */
+    transition: transform 0.3s ease;
+display: block;
+    cursor: pointer;
+  }
+
+  .video-player.enlarged {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: 90vh;
+    max-width: 90vw;
+    z-index: 1000;
+    background: #000;
+  }
+
+  .close-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 15px;
+    font-size: 18px;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+    display: none; /* Hidden initially */
+  }
+
+    video, iframe {
+      width: 100%;
+      height: auto;
+      max-width: 800px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      text-align: center;
+    }
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      cursor: pointer;
+      transition: opacity 0.5s ease;
+      text-align: center;
+      padding: 1rem;
+    }
+    .overlay:hover {
+      opacity: 0.9;
+    }
+    .overlay img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      margin-bottom: 1rem;
+    }
+    .overlay p {
+      font-size: 1rem;
+      color: #fff;
+      font-style: italic;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+    .video-player.enlarged {
+      width: 100vw;
+      height: auto;
+      max-height: 90vh;
+    }
+      .memory {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+      }
+      .content, .image-container {
+        width: 90%;
+      }
+      .thread {
+        width: 10%;
+        height: calc(100vh * 3);
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      .overlay img {
+        width: 60px;
+        height: 60px;
+      }
+      .overlay p {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <audio id="bg-music" loop style="display: none;">
+    <source src="Ed Sheeran - Photograph.mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="overlay" id="startOverlay">
+    <img src="Ash.png" alt="Start Button">
+    <p>A simple touch to begin your journey</p>
+  </div>
+
+  <div class="timeline blur" id="timelineContainer">
+    <section class="memory active" id="memory-0">
+      <h1>You are just a simple man.</h1>
+    </section>
+
+    <div class="thread">
+      <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 100 300">
+        <path d="M50,0 C30,50,70,100,50,150 C30,200,70,250,50,300" stroke="white" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+
+    <section class="memory" id="memory-3">
+      <div class="content">
+        <h2>P in PC stands for 'People'</h2>
+        <p>Through thick and thin, they were always there with you...</p>
+      </div>
+      <div class="image-container">
+        <img src="the epic trio.jpeg" alt="Memory 3" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-2">
+      <div class="image-container">
+        <img src="sec.jpg" alt="Memory 2" />
+      </div>
+      <div class="content">
+        <h2>SEC 2.0</h2>
+        <p>A robot which Help Desk completely changed...</p>
+      </div>
+    </section>
+
+    <section class="memory" id="memory-3">
+      <div class="content">
+        <h2>2.0 Vetting</h2>
+        <p>From best dressed JC to best dressed SC, you have come a long way...</p>
+      </div>
+      <div class="image-container">
+        <img src="2.0.jpeg" alt="Memory 3" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-2">
+      <div class="image-container">
+        <img src="bcon.jpg" alt="Memory 2" />
+      </div>
+      <div class="content">
+        <h2>BCON Times</h2>
+        <p>Remember volunteering every day during the B'Con days...</p>
+      </div>
+    </section>
+
+    <section class="memory" id="memory-3">
+      <div class="content">
+        <h2>PC Connect Day</h2>
+        <p>Discovering new things along the way, innovation never left you...</p>
+      </div>
+      <div class="image-container">
+        <img src="pc connect.jpg" alt="Memory 3" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-2">
+      <div class="image-container">
+        <img src="bcon.jpg" alt="Memory 2" />
+      </div>
+      <div class="content">
+        <h2>The Golden Day</h2>
+        <p>The day that started the next chapter, things completely unknown to us...</p>
+      </div>
+    </section>
+
+    <section class="memory" id="memory-1">
+      <div class="content">
+        <h2>Crazy Ashwath</h2>
+        <p>From being a stoic, to being nonchalant and freaky at the same time...</p>
+      </div>
+      <div class="image-container">
+        <img src="crazy.jpg" alt="Memory 1" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-2">
+      <div class="image-container">
+        <img src="sc team.jpg" alt="Memory 2" />
+      </div>
+      <div class="content">
+        <h2>The MBB Days</h2>
+        <p>It was hard, yet, you were there for the Team...</p>
+      </div>
+    </section>
+
+    <section class="memory" id="memory-3">
+      <div class="content">
+        <h2>Rakhi</h2>
+        <p>Transcending traditions every single day, you have come a long way...</p>
+      </div>
+      <div class="image-container">
+        <img src="rakhi.jpg" alt="Memory 3" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-2">
+      <div class="image-container">
+        <img src="nunds.jpg" alt="Memory 2" />
+      </div>
+      <div class="content">
+        <h2>Applications and Approvals</h2>
+        <p>From room approvals to running after random applications...</p>
+      </div>
+    </section>
+
+    <section class="memory" id="memory-3">
+      <div class="content">
+        <h2>St. Stephen's Shenanigans</h2>
+        <p>Exploring random Tamil cluster classes, you definitly love Stephens over SRCC...</p>
+      </div>
+      <div class="image-container">
+        <img src="stephens.jpg" alt="Memory 3" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-2">
+      <div class="image-container">
+        <img src="nomura.jpg" alt="Memory 2" />
+      </div>
+      <div class="content">
+        <h2>The Nomura Man</h2>
+        <p>A person so caring for the Team, amidst the chaos of Nomura...</p>
+      </div>
+    </section>
+
+    <section class="memory" id="memory-3">
+      <div class="content">
+        <h2>Sunil Chai</h2>
+        <p>How time flew by, yet these streets hold the best of PC memories...</p>
+      </div>
+      <div class="image-container">
+        <img src="street.jpg" alt="Memory 3" />
+      </div>
+    </section>
+
+    <section class="memory" id="memory-4" style="flex-direction: column; justify-content: center;">
+      <div class="content" style="margin-bottom: 1rem;">
+        <h2>6 February 2025</h2>
+        <p>A memory in creation, wishing you a very Happy Belated Birthday, VK!</p>
+      </div>
+
+<div class="video-wrapper">
+<iframe src="https://www.youtube.com/embed/RDDL19I1LrI?si=LJ6DsizUzuDhK3_3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<button class="close-btn" id="closeBtn">Close</button>
+
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const overlay = document.getElementById("startOverlay");
+    const timelineContainer = document.getElementById("timelineContainer");
+    const bgMusic = document.getElementById("bg-music");
+    const video = document.querySelector("video");
+    const closeBtn = document.getElementById("closeBtn");
+
+  window.onload = function() {
+    var audio = document.getElementById("bg-music");
+    audio.volume = 0.3; // Set volume to 45%
+    audio.play(); // Ensure it starts playing
+  };
+
+    let audioStarted = false;
+    function startAudio() {
+        if (!audioStarted) {
+            bgMusic.play().catch(error => {
+                console.log('Audio playback prevented:', error);
+            });
+            audioStarted = true;
+        }
+    }
+
+     // Listen for a click on the overlay to start audio and remove overlay + blur effect
+    if (overlay) {
+        overlay.addEventListener("click", function () {
+            startAudio();
+            overlay.style.opacity = 0;
+            timelineContainer.classList.remove("blur");
+            setTimeout(() => {
+                overlay.style.display = "none";
+            }, 500);
+        });
+    }	
+
+    // Scroll event listener for timeline (checks if element exists first)
+    const timelineEl = document.querySelector(".timeline");
+    if (timelineEl) {
+        timelineEl.addEventListener("scroll", startAudio, { once: true });
+    }
+
+    // Intersection Observer for activating memories
+    const memories = document.querySelectorAll(".memory");
+    if (memories.length > 0) {
+        const observerOptions = { threshold: 0.5 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("active");
+                } else {
+                    entry.target.classList.remove("active");
+                }
+            });
+        }, observerOptions);
+        memories.forEach(memory => observer.observe(memory));
+    }
+
+    // Video enlarge & close functionality
+    if (video && closeBtn) {
+        video.addEventListener("click", function () {
+            if (!video.classList.contains("enlarged")) {
+                video.classList.add("enlarged");
+                closeBtn.style.display = "block";
+            }
+        });
+
+        closeBtn.addEventListener("click", function () {
+            video.classList.remove("enlarged");
+            closeBtn.style.display = "none";
+        });
+    }
+});
+
+  </script>
+</body>
+</html>
